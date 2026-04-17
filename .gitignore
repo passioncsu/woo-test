@@ -41,3 +41,9 @@ coverage/
 # === Build ===
 build/
 out/
+
+# === Claude Code ===
+.claude/
+
+# === Plans ===
+plans/
