@@ -32,6 +32,7 @@ const [Form, formApi] = useVbenForm({
       component: 'Select',
       componentProps: {
         placeholder: '请选择性别',
+        allowClear: true,
         options: [
           { label: '男', value: '男' },
           { label: '女', value: '女' },
@@ -39,24 +40,6 @@ const [Form, formApi] = useVbenForm({
       },
       fieldName: 'gender',
       label: '性别',
-    },
-    {
-      component: 'DatePicker',
-      componentProps: { placeholder: '请选择出生日期', class: 'w-full' },
-      fieldName: 'birthday',
-      label: '出生日期',
-    },
-    {
-      component: 'Input',
-      componentProps: { placeholder: '请输入手机号' },
-      fieldName: 'phone',
-      label: '手机号',
-    },
-    {
-      component: 'Input',
-      componentProps: { placeholder: '请输入邮箱' },
-      fieldName: 'email',
-      label: '邮箱',
     },
     {
       component: 'Input',
@@ -67,14 +50,8 @@ const [Form, formApi] = useVbenForm({
     {
       component: 'Input',
       componentProps: { placeholder: '请输入班级' },
-      fieldName: 'class',
+      fieldName: 'className',
       label: '班级',
-    },
-    {
-      component: 'Input',
-      componentProps: { placeholder: '请输入地址' },
-      fieldName: 'address',
-      label: '地址',
     },
     {
       component: 'Select',
@@ -90,12 +67,32 @@ const [Form, formApi] = useVbenForm({
       label: '状态',
       defaultValue: 1,
     },
+    {
+      component: 'Input',
+      componentProps: { placeholder: '请输入手机号' },
+      fieldName: 'phone',
+      label: '手机号',
+    },
+    {
+      component: 'Input',
+      componentProps: { placeholder: '请输入邮箱' },
+      fieldName: 'email',
+      label: '邮箱',
+    },
+    {
+      component: 'Input',
+      componentProps: { placeholder: '请输入地址' },
+      fieldName: 'address',
+      label: '地址',
+    },
   ],
   commonConfig: {
     componentProps: {
       class: 'w-full',
     },
   },
+  layout: 'horizontal',
+  wrapperClass: 'grid-cols-1 md:grid-cols-2',
 });
 
 async function handleSubmit() {
@@ -104,7 +101,21 @@ async function handleSubmit() {
     return;
   }
 
-  const values = formApi.getValues();
+  const rawValues = formApi.getValues();
+
+  // 清理空值，避免发送无意义的空字符串
+  const values: Record<string, any> = {};
+  for (const [key, value] of Object.entries(rawValues)) {
+    if (value !== undefined && value !== null && value !== '') {
+      values[key] = value;
+    }
+  }
+
+  // 字段映射: className -> class（避免JS保留字冲突）
+  if (values.className !== undefined) {
+    values['class'] = values.className;
+    delete values.className;
+  }
 
   if (isEdit.value && editId.value) {
     await updateStudentApi(editId.value, values);
@@ -120,7 +131,13 @@ async function handleSubmit() {
 function setFormData(data: Record<string, any>) {
   isEdit.value = !!data.id;
   editId.value = data.id;
-  formApi.setValues(data);
+  // 字段映射: class -> className（避免JS保留字冲突）
+  const mapped = { ...data };
+  if (mapped['class'] !== undefined) {
+    mapped.className = mapped['class'];
+    delete mapped['class'];
+  }
+  formApi.setValues(mapped);
 }
 
 function resetFields() {

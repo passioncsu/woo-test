@@ -41,7 +41,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       { field: 'name', title: '姓名', width: 120 },
       { field: 'gender', title: '性别', width: 80 },
       { field: 'major', title: '专业', width: 160 },
-      { field: 'class', title: '班级', width: 140 },
+      { field: 'class', title: '班级', width: 140, formatter: ({ cellValue }) => cellValue || '-' },
       { field: 'phone', title: '电话', width: 140 },
       { field: 'status', title: '状态', width: 100, slots: { default: 'status' } },
       { field: 'created_at', title: '创建时间', width: 180 },
