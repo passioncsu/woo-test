@@ -21,12 +21,12 @@ func NewStudentHandler(svc *service.StudentService) *StudentHandler {
 func (h *StudentHandler) Create(c *gin.Context) {
 	var req service.CreateStudentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.Fail(c, 400, 400, "invalid request: "+err.Error())
+		pkgresponse.Fail(c, 400, 400, "请求参数无效")
 		return
 	}
 
 	if err := h.svc.Create(req); err != nil {
-		pkgresponse.Fail(c, 400, 400, err.Error())
+		writeServiceError(c, err)
 		return
 	}
 
@@ -58,12 +58,12 @@ func (h *StudentHandler) Update(c *gin.Context) {
 
 	var req service.UpdateStudentRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgresponse.Fail(c, 400, 400, "invalid request: "+err.Error())
+		pkgresponse.Fail(c, 400, 400, "请求参数无效")
 		return
 	}
 
 	if err := h.svc.Update(uint(id), req); err != nil {
-		pkgresponse.Fail(c, 400, 400, err.Error())
+		writeServiceError(c, err)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (h *StudentHandler) Delete(c *gin.Context) {
 	}
 
 	if err := h.svc.Delete(uint(id)); err != nil {
-		pkgresponse.Fail(c, 500, 500, "delete failed: "+err.Error())
+		pkgresponse.Fail(c, 500, 500, "delete failed")
 		return
 	}
 
@@ -94,9 +94,18 @@ func (h *StudentHandler) List(c *gin.Context) {
 
 	result, err := h.svc.List(query)
 	if err != nil {
-		pkgresponse.Fail(c, 500, 500, "query failed: "+err.Error())
+		pkgresponse.Fail(c, 500, 500, "query failed")
 		return
 	}
 
 	pkgresponse.OK(c, result)
+}
+
+// writeServiceError 区分验证错误和内部错误
+func writeServiceError(c *gin.Context, err error) {
+	if _, ok := err.(*pkgresponse.ValidationError); ok {
+		pkgresponse.Fail(c, 400, 400, err.Error())
+		return
+	}
+	pkgresponse.Fail(c, 500, 500, "内部服务错误")
 }

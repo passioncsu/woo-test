@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -10,7 +11,9 @@ import (
 func SeedData(db *gorm.DB) error {
 	// 检查是否已有学生数据
 	var count int64
-	db.Model(&Student{}).Count(&count)
+	if err := db.Model(&Student{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("failed to count students: %w", err)
+	}
 	if count > 0 {
 		return nil
 	}

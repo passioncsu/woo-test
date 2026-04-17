@@ -20,14 +20,14 @@ func validateGender(gender string) error {
 		return nil
 	}
 	if gender != "男" && gender != "女" {
-		return errors.New("gender must be 男 or 女")
+		return pkgresponse.NewValidationError("性别必须为 男 或 女")
 	}
 	return nil
 }
 
 func validateStatus(status int) error {
-	if status != 0 && status < 1 || status > 3 {
-		return errors.New("status must be 1, 2, or 3")
+	if status != 0 && (status < 1 || status > 3) {
+		return pkgresponse.NewValidationError("状态必须为 1(在读)、2(休学) 或 3(毕业)")
 	}
 	return nil
 }
@@ -54,16 +54,16 @@ type CreateStudentRequest struct {
 }
 
 type UpdateStudentRequest struct {
-	Name      string `json:"name"`
-	Gender    string `json:"gender"`
-	Birthday  string `json:"birthday"`
-	Phone     string `json:"phone"`
-	Email     string `json:"email"`
-	Address   string `json:"address"`
-	Major     string `json:"major"`
-	Class     string `json:"class"`
-	StudentNo string `json:"student_no"`
-	Status    *int   `json:"status"`
+	Name      *string `json:"name"`
+	Gender    *string `json:"gender"`
+	Birthday  *string `json:"birthday"`
+	Phone     *string `json:"phone"`
+	Email     *string `json:"email"`
+	Address   *string `json:"address"`
+	Major     *string `json:"major"`
+	Class     *string `json:"class"`
+	StudentNo *string `json:"student_no"`
+	Status    *int    `json:"status"`
 }
 
 type ListStudentQuery struct {
@@ -79,7 +79,7 @@ func (s *StudentService) Create(req CreateStudentRequest) error {
 		return err
 	}
 	if exists {
-		return errors.New("学号已存在")
+		return pkgresponse.NewValidationError("学号已存在")
 	}
 
 	// 验证字段
@@ -90,10 +90,10 @@ func (s *StudentService) Create(req CreateStudentRequest) error {
 		return err
 	}
 	if req.Phone != "" && !phoneRegex.MatchString(req.Phone) {
-		return errors.New("手机号格式不正确")
+		return pkgresponse.NewValidationError("手机号格式不正确")
 	}
 	if req.Email != "" && !emailRegex.MatchString(req.Email) {
-		return errors.New("邮箱格式不正确")
+		return pkgresponse.NewValidationError("邮箱格式不正确")
 	}
 
 	student := model.Student{
@@ -111,9 +111,10 @@ func (s *StudentService) Create(req CreateStudentRequest) error {
 	if req.Birthday != "" {
 		t, err := time.Parse("2006-01-02", req.Birthday)
 		if err != nil {
-			return errors.New("invalid birthday format, expected YYYY-MM-DD")
+			return pkgresponse.NewValidationError("出生日期格式不正确，应为 YYYY-MM-DD")
 		}
-		student.Birthday = &t
+		d := model.Date(t)
+		student.Birthday = &d
 	}
 
 	return s.repo.Create(&student)
@@ -130,65 +131,73 @@ func (s *StudentService) Update(id uint, req UpdateStudentRequest) error {
 	}
 
 	// 验证学号唯一性
-	if req.StudentNo != "" {
-		exists, err := s.repo.ExistsByStudentNo(req.StudentNo, id)
+	if req.StudentNo != nil && *req.StudentNo != "" {
+		exists, err := s.repo.ExistsByStudentNo(*req.StudentNo, id)
 		if err != nil {
 			return err
 		}
 		if exists {
-			return errors.New("学号已存在")
+			return pkgresponse.NewValidationError("学号已存在")
 		}
 	}
 
 	// 验证字段
-	if err := validateGender(req.Gender); err != nil {
-		return err
+	if req.Gender != nil {
+		if err := validateGender(*req.Gender); err != nil {
+			return err
+		}
 	}
 	if req.Status != nil {
 		if err := validateStatus(*req.Status); err != nil {
 			return err
 		}
 	}
-	if req.Phone != "" && !phoneRegex.MatchString(req.Phone) {
-		return errors.New("手机号格式不正确")
+	if req.Phone != nil && *req.Phone != "" && !phoneRegex.MatchString(*req.Phone) {
+		return pkgresponse.NewValidationError("手机号格式不正确")
 	}
-	if req.Email != "" && !emailRegex.MatchString(req.Email) {
-		return errors.New("邮箱格式不正确")
+	if req.Email != nil && *req.Email != "" && !emailRegex.MatchString(*req.Email) {
+		return pkgresponse.NewValidationError("邮箱格式不正确")
 	}
 
-	if req.Name != "" {
-		student.Name = req.Name
+	// 应用更新（nil = 未提供不修改，非 nil = 更新值含空串）
+	if req.Name != nil {
+		student.Name = *req.Name
 	}
-	if req.Gender != "" {
-		student.Gender = req.Gender
+	if req.Gender != nil {
+		student.Gender = *req.Gender
 	}
-	if req.Phone != "" {
-		student.Phone = req.Phone
+	if req.Phone != nil {
+		student.Phone = *req.Phone
 	}
-	if req.Email != "" {
-		student.Email = req.Email
+	if req.Email != nil {
+		student.Email = *req.Email
 	}
-	if req.Address != "" {
-		student.Address = req.Address
+	if req.Address != nil {
+		student.Address = *req.Address
 	}
-	if req.Major != "" {
-		student.Major = req.Major
+	if req.Major != nil {
+		student.Major = *req.Major
 	}
-	if req.Class != "" {
-		student.Class = req.Class
+	if req.Class != nil {
+		student.Class = *req.Class
 	}
-	if req.StudentNo != "" {
-		student.StudentNo = req.StudentNo
+	if req.StudentNo != nil {
+		student.StudentNo = *req.StudentNo
 	}
 	if req.Status != nil {
 		student.Status = *req.Status
 	}
-	if req.Birthday != "" {
-		t, err := time.Parse("2006-01-02", req.Birthday)
-		if err != nil {
-			return errors.New("invalid birthday format, expected YYYY-MM-DD")
+	if req.Birthday != nil {
+		if *req.Birthday == "" {
+			student.Birthday = nil
+		} else {
+			t, err := time.Parse("2006-01-02", *req.Birthday)
+			if err != nil {
+				return pkgresponse.NewValidationError("出生日期格式不正确，应为 YYYY-MM-DD")
+			}
+			d := model.Date(t)
+			student.Birthday = &d
 		}
-		student.Birthday = &t
 	}
 
 	return s.repo.Update(student)

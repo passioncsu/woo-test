@@ -40,6 +40,7 @@ func Fail(c *gin.Context, httpCode int, code int, msg string) {
 		Code:    code,
 		Message: msg,
 	})
+	c.Abort()
 }
 
 func Unauthorized(c *gin.Context, msg string) {

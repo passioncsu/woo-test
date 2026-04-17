@@ -25,7 +25,7 @@ type Student struct {
 	ID        uint           `gorm:"primarykey" json:"id"`
 	Name      string         `gorm:"size:100;not null" json:"name"`
 	Gender    string         `gorm:"size:10" json:"gender"`
-	Birthday  *time.Time     `json:"birthday"`
+	Birthday  *Date          `json:"birthday"`
 	Phone     string         `gorm:"size:20" json:"phone"`
 	Email     string         `gorm:"size:100" json:"email"`
 	Address   string         `gorm:"size:255" json:"address"`

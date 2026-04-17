@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { z } from '@vben/common-ui';
 import { message } from 'ant-design-vue';
 import { ref } from 'vue';
 
@@ -11,19 +12,23 @@ const emit = defineEmits<{
 
 const isEdit = ref(false);
 const editId = ref<number>();
+const submitting = ref(false);
+
+const phoneRule = z.string().regex(/^$|^1[3-9]\d{9}$/, '请输入正确的手机号').optional();
+const emailRule = z.string().regex(/^$|^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/, '请输入正确的邮箱').optional();
 
 const [Form, formApi] = useVbenForm({
   schema: [
     {
       component: 'Input',
-      componentProps: { placeholder: '请输入学号' },
+      componentProps: { placeholder: '请输入学号', maxlength: 50 },
       fieldName: 'student_no',
       label: '学号',
       rules: 'required',
     },
     {
       component: 'Input',
-      componentProps: { placeholder: '请输入姓名' },
+      componentProps: { placeholder: '请输入姓名', maxlength: 100 },
       fieldName: 'name',
       label: '姓名',
       rules: 'required',
@@ -43,13 +48,13 @@ const [Form, formApi] = useVbenForm({
     },
     {
       component: 'Input',
-      componentProps: { placeholder: '请输入专业' },
+      componentProps: { placeholder: '请输入专业', maxlength: 100 },
       fieldName: 'major',
       label: '专业',
     },
     {
       component: 'Input',
-      componentProps: { placeholder: '请输入班级' },
+      componentProps: { placeholder: '请输入班级', maxlength: 100 },
       fieldName: 'className',
       label: '班级',
     },
@@ -75,19 +80,21 @@ const [Form, formApi] = useVbenForm({
     },
     {
       component: 'Input',
-      componentProps: { placeholder: '请输入手机号' },
+      componentProps: { placeholder: '请输入手机号', maxlength: 11 },
       fieldName: 'phone',
       label: '手机号',
+      rules: phoneRule,
     },
     {
       component: 'Input',
-      componentProps: { placeholder: '请输入邮箱' },
+      componentProps: { placeholder: '请输入邮箱', maxlength: 100 },
       fieldName: 'email',
       label: '邮箱',
+      rules: emailRule,
     },
     {
       component: 'Input',
-      componentProps: { placeholder: '请输入地址' },
+      componentProps: { placeholder: '请输入地址', maxlength: 255 },
       fieldName: 'address',
       label: '地址',
     },
@@ -109,11 +116,21 @@ async function handleSubmit() {
 
   const rawValues = formApi.getValues();
 
-  // 清理空值，避免发送无意义的空字符串
   const values: Record<string, any> = {};
-  for (const [key, value] of Object.entries(rawValues)) {
-    if (value !== undefined && value !== null && value !== '') {
-      values[key] = value;
+
+  if (isEdit.value) {
+    // 编辑模式：发送所有字段（含空串），支持清空
+    for (const [key, value] of Object.entries(rawValues)) {
+      if (value !== undefined) {
+        values[key] = value === null ? '' : value;
+      }
+    }
+  } else {
+    // 创建模式：过滤空值
+    for (const [key, value] of Object.entries(rawValues)) {
+      if (value !== undefined && value !== null && value !== '') {
+        values[key] = value;
+      }
     }
   }
 
@@ -123,15 +140,21 @@ async function handleSubmit() {
     delete values.className;
   }
 
-  if (isEdit.value && editId.value) {
-    await updateStudentApi(editId.value, values);
-    message.success('更新成功');
-  } else {
-    await createStudentApi(values as any);
-    message.success('创建成功');
+  submitting.value = true;
+  try {
+    if (isEdit.value && editId.value) {
+      await updateStudentApi(editId.value, values);
+      message.success('更新成功');
+    } else {
+      await createStudentApi(values as any);
+      message.success('创建成功');
+    }
+    emit('success');
+  } catch {
+    // 错误已由 request interceptor 处理
+  } finally {
+    submitting.value = false;
   }
-
-  emit('success');
 }
 
 function setFormData(data: Record<string, any>) {
@@ -160,7 +183,7 @@ defineExpose({ setFormData, resetFields });
     <Form />
     <div class="mt-4 flex justify-end gap-3">
       <a-button @click="resetFields">重置</a-button>
-      <a-button type="primary" @click="handleSubmit">提交</a-button>
+      <a-button type="primary" :loading="submitting" @click="handleSubmit">提交</a-button>
     </div>
   </div>
 </template>

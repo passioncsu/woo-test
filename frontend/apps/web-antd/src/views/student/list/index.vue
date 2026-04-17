@@ -41,6 +41,7 @@ const [Grid, gridApi] = useVbenVxeGrid({
       { field: 'student_no', title: '学号', width: 140 },
       { field: 'name', title: '姓名', width: 120 },
       { field: 'gender', title: '性别', width: 80 },
+      { field: 'birthday', title: '出生日期', width: 120, formatter: ({ cellValue }) => cellValue || '-' },
       { field: 'major', title: '专业', width: 160 },
       { field: 'class', title: '班级', width: 140, formatter: ({ cellValue }) => cellValue || '-' },
       { field: 'phone', title: '电话', width: 140 },
@@ -88,10 +89,15 @@ function handleAdd() {
 async function handleEdit(record: any) {
   formModalApi.setState({ title: '编辑学生' });
   formModalApi.open();
-  const detail = await getStudentDetailApi(record.id);
-  nextTick(() => {
-    formRef.value?.setFormData(detail);
-  });
+  try {
+    const detail = await getStudentDetailApi(record.id);
+    nextTick(() => {
+      formRef.value?.setFormData(detail);
+    });
+  } catch {
+    message.error('获取学生详情失败');
+    formModalApi.close();
+  }
 }
 
 function handleDelete(record: any) {
@@ -99,9 +105,13 @@ function handleDelete(record: any) {
     title: '确认删除',
     content: `确定要删除学生「${record.name}」吗？`,
     async onOk() {
-      await deleteStudentApi(record.id);
-      message.success('删除成功');
-      gridApi.reload();
+      try {
+        await deleteStudentApi(record.id);
+        message.success('删除成功');
+        gridApi.reload();
+      } catch {
+        message.error('删除失败');
+      }
     },
   });
 }
