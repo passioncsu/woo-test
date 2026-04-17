@@ -6,6 +6,7 @@ import { nextTick, ref } from 'vue';
 import { useVbenVxeGrid } from '#/adapter/vxe-table';
 import {
   deleteStudentApi,
+  getStudentDetailApi,
   getStudentListApi,
 } from '#/api/modules/student';
 
@@ -84,11 +85,12 @@ function handleAdd() {
   });
 }
 
-function handleEdit(record: any) {
+async function handleEdit(record: any) {
   formModalApi.setState({ title: '编辑学生' });
   formModalApi.open();
+  const detail = await getStudentDetailApi(record.id);
   nextTick(() => {
-    formRef.value?.setFormData(record);
+    formRef.value?.setFormData(detail);
   });
 }
 

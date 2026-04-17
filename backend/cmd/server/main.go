@@ -34,6 +34,11 @@ func main() {
 		log.Fatalf("Failed to migrate: %v", err)
 	}
 
+	// 初始化种子数据
+	if err := model.SeedData(db); err != nil {
+		log.Fatalf("Failed to seed data: %v", err)
+	}
+
 	// 初始化分层
 	adminRepo := repository.NewAdminRepository(db)
 	studentRepo := repository.NewStudentRepository(db)

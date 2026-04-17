@@ -54,6 +54,12 @@ const [Form, formApi] = useVbenForm({
       label: '班级',
     },
     {
+      component: 'DatePicker',
+      componentProps: { placeholder: '请选择出生日期', class: 'w-full', valueFormat: 'YYYY-MM-DD' },
+      fieldName: 'birthday',
+      label: '出生日期',
+    },
+    {
       component: 'Select',
       componentProps: {
         placeholder: '请选择状态',

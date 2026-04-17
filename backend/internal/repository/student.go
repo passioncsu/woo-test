@@ -34,6 +34,18 @@ func (r *StudentRepository) Delete(id uint) error {
 	return r.db.Delete(&model.Student{}, id).Error
 }
 
+func (r *StudentRepository) ExistsByStudentNo(studentNo string, excludeID uint) (bool, error) {
+	var count int64
+	db := r.db.Model(&model.Student{}).Where("student_no = ?", studentNo)
+	if excludeID > 0 {
+		db = db.Where("id != ?", excludeID)
+	}
+	if err := db.Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 type StudentQuery struct {
 	Keyword  string
 	Page     int

@@ -26,7 +26,7 @@ func (h *StudentHandler) Create(c *gin.Context) {
 	}
 
 	if err := h.svc.Create(req); err != nil {
-		pkgresponse.Fail(c, 500, 500, "create failed: "+err.Error())
+		pkgresponse.Fail(c, 400, 400, err.Error())
 		return
 	}
 
@@ -63,7 +63,7 @@ func (h *StudentHandler) Update(c *gin.Context) {
 	}
 
 	if err := h.svc.Update(uint(id), req); err != nil {
-		pkgresponse.Fail(c, 500, 500, "update failed: "+err.Error())
+		pkgresponse.Fail(c, 400, 400, err.Error())
 		return
 	}
 
