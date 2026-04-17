@@ -715,6 +715,10 @@ importers:
       vue-router:
         specifier: 'catalog:'
         version: 5.0.4(@vue/compiler-sfc@3.5.32)(pinia@3.0.4(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2)))(vue@3.5.32(typescript@6.0.2))
+    devDependencies:
+      '@playwright/test':
+        specifier: 'catalog:'
+        version: 1.59.1
 
   apps/web-antdv-next:
     dependencies:

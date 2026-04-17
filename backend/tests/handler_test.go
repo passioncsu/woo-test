@@ -139,3 +139,129 @@ func TestStudentCRUD(t *testing.T) {
 	data := listResp["data"].(map[string]interface{})
 	assert.Equal(t, float64(1), data["total"])
 }
+
+func getTestToken(t *testing.T, r *gin.Engine) string {
+	body, _ := json.Marshal(map[string]string{
+		"username": "admin",
+		"password": "admin123",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/register", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/login", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	r.ServeHTTP(w, req)
+
+	var loginResp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &loginResp)
+	return loginResp["data"].(map[string]interface{})["accessToken"].(string)
+}
+
+func TestStudentValidation(t *testing.T) {
+	r, _ := setupTestRouter(t)
+	token := getTestToken(t, r)
+
+	// 无效手机号
+	body, _ := json.Marshal(map[string]interface{}{
+		"name": "测试", "student_no": "2024001", "phone": "1234",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/students", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// 无效邮箱
+	body, _ = json.Marshal(map[string]interface{}{
+		"name": "测试", "student_no": "2024001", "email": "bad-email",
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/students", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+
+	// 学号重复：先创建一个
+	body, _ = json.Marshal(map[string]interface{}{
+		"name": "张三", "student_no": "2024001",
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/students", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// 再创建同号
+	body, _ = json.Marshal(map[string]interface{}{
+		"name": "李四", "student_no": "2024001",
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("POST", "/api/students", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestStudentUpdate_ClearField(t *testing.T) {
+	r, _ := setupTestRouter(t)
+	token := getTestToken(t, r)
+
+	// 创建学生带 phone
+	body, _ := json.Marshal(map[string]interface{}{
+		"name": "张三", "student_no": "2024001", "phone": "13800138001",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("POST", "/api/students", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	// 清空 phone
+	body, _ = json.Marshal(map[string]interface{}{
+		"phone": "",
+	})
+	w = httptest.NewRecorder()
+	req, _ = http.NewRequest("PUT", "/api/students/1", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestStudentDelete_NotFound(t *testing.T) {
+	r, _ := setupTestRouter(t)
+	token := getTestToken(t, r)
+
+	// GORM 软删除不存在的记录是幂等的，不报错
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("DELETE", "/api/students/999", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+}
+
+func TestStudentList_NoPage(t *testing.T) {
+	r, _ := setupTestRouter(t)
+	token := getTestToken(t, r)
+
+	// 不带 page/pageSize 参数
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/api/students", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	data := resp["data"].(map[string]interface{})
+	assert.Equal(t, float64(1), data["page"])
+	assert.Equal(t, float64(10), data["pageSize"])
+}
