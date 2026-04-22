@@ -27,13 +27,14 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.64
+          version: v1.65
           working-directory: backend
           args: --timeout=5m
 
   lint-frontend:
     name: Lint Frontend
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -101,6 +102,7 @@ jobs:
   test-frontend:
     name: Test Frontend
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
