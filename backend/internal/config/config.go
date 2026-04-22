@@ -55,6 +55,21 @@ func Load() (*Config, error) {
 	// 环境变量覆盖
 	viper.AutomaticEnv()
 	viper.SetEnvPrefix("APP")
+	// viper.Unmarshal 不触发 AutomaticEnv 对已有值的 key 查找，需要显式绑定
+	_ = viper.BindEnv("database.host")
+	_ = viper.BindEnv("database.port")
+	_ = viper.BindEnv("database.user")
+	_ = viper.BindEnv("database.password")
+	_ = viper.BindEnv("database.dbname")
+	_ = viper.BindEnv("database.sslmode")
+	_ = viper.BindEnv("redis.host")
+	_ = viper.BindEnv("redis.port")
+	_ = viper.BindEnv("redis.password")
+	_ = viper.BindEnv("redis.db")
+	_ = viper.BindEnv("jwt.secret")
+	_ = viper.BindEnv("jwt.expiration")
+	_ = viper.BindEnv("server.port")
+	_ = viper.BindEnv("server.mode")
 
 	// 默认值
 	viper.SetDefault("server.port", "8080")
