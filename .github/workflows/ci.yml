@@ -9,10 +9,11 @@ on:
 env:
   GO_VERSION: "1.22"
   NODE_VERSION: "22"
+  PNPM_VERSION: "9.12.0"
 
 jobs:
   # ========================================
-  # Lint（并行）
+  # Lint
   # ========================================
   lint-backend:
     name: Lint Backend
@@ -22,11 +23,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
           version: v1.64
           working-directory: backend
+          args: --timeout=5m
 
   lint-frontend:
     name: Lint Frontend
@@ -34,6 +37,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -45,7 +50,7 @@ jobs:
         working-directory: frontend
 
   # ========================================
-  # Test（并行）
+  # Test
   # ========================================
   test-backend:
     name: Test Backend
@@ -85,6 +90,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: backend/go.sum
       - name: Run tests
         working-directory: backend
         run: go test ./... -v -coverprofile=coverage.txt -covermode=atomic
@@ -98,6 +104,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
