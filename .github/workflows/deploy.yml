@@ -39,9 +39,9 @@ jobs:
 
       - name: Sync config files and deploy
         run: |
+          ssh -i ~/.ssh/deploy_key ${{ env.PROD_USER }}@${{ env.PROD_HOST }} "mkdir -p /srv/woo-test/nginx"
           scp -i ~/.ssh/deploy_key \
             deploy/docker-compose.prod.yml \
-            deploy/.env \
             deploy/nginx/nginx.conf \
             ${{ env.PROD_USER }}@${{ env.PROD_HOST }}:/srv/woo-test/
           ssh -i ~/.ssh/deploy_key ${{ env.PROD_USER }}@${{ env.PROD_HOST }} << 'DEPLOY'
