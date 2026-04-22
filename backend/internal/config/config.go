@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/spf13/viper"
 )
@@ -97,6 +98,54 @@ func Load() (*Config, error) {
 	var cfg Config
 	if err := viper.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
+	}
+
+	// 环境变量直接覆盖，不依赖 Viper 的 AutomaticEnv/BindEnv 机制
+	if v := os.Getenv("APP_SERVER_PORT"); v != "" {
+		cfg.Server.Port = v
+	}
+	if v := os.Getenv("APP_SERVER_MODE"); v != "" {
+		cfg.Server.Mode = v
+	}
+	if v := os.Getenv("APP_DATABASE_HOST"); v != "" {
+		cfg.Database.Host = v
+	}
+	if v := os.Getenv("APP_DATABASE_PORT"); v != "" {
+		cfg.Database.Port = v
+	}
+	if v := os.Getenv("APP_DATABASE_USER"); v != "" {
+		cfg.Database.User = v
+	}
+	if v := os.Getenv("APP_DATABASE_PASSWORD"); v != "" {
+		cfg.Database.Password = v
+	}
+	if v := os.Getenv("APP_DATABASE_DBNAME"); v != "" {
+		cfg.Database.DBName = v
+	}
+	if v := os.Getenv("APP_DATABASE_SSLMODE"); v != "" {
+		cfg.Database.SSLMode = v
+	}
+	if v := os.Getenv("APP_REDIS_HOST"); v != "" {
+		cfg.Redis.Host = v
+	}
+	if v := os.Getenv("APP_REDIS_PORT"); v != "" {
+		cfg.Redis.Port = v
+	}
+	if v := os.Getenv("APP_REDIS_PASSWORD"); v != "" {
+		cfg.Redis.Password = v
+	}
+	if v := os.Getenv("APP_REDIS_DB"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.Redis.DB = n
+		}
+	}
+	if v := os.Getenv("APP_JWT_SECRET"); v != "" {
+		cfg.JWT.Secret = v
+	}
+	if v := os.Getenv("APP_JWT_EXPIRATION"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			cfg.JWT.Expiration = n
+		}
 	}
 
 	// 生产环境必须设置 JWT secret
