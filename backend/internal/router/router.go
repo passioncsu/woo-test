@@ -19,6 +19,9 @@ func Setup(
 	engine.Use(middleware.CORS())
 	engine.Use(gin.Recovery())
 
+	// 健康检查
+	engine.GET("/api/health", func(c *gin.Context) { c.Status(204) })
+
 	// 公开接口
 	engine.POST("/api/login", authHandler.Login)
 	engine.POST("/api/register", authHandler.Register)
