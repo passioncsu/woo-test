@@ -39,6 +39,11 @@ jobs:
 
       - name: Sync config files and deploy
         run: |
+          scp -i ~/.ssh/deploy_key \
+            deploy/docker-compose.prod.yml \
+            deploy/.env \
+            deploy/nginx/nginx.conf \
+            ${{ env.PROD_USER }}@${{ env.PROD_HOST }}:/srv/woo-test/
           ssh -i ~/.ssh/deploy_key ${{ env.PROD_USER }}@${{ env.PROD_HOST }} << 'DEPLOY'
             cd /srv/woo-test
             docker-compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
