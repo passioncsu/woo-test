@@ -37,18 +37,16 @@ jobs:
       - name: Transfer frontend image to server
         run: docker save ${{ env.FRONTEND_IMAGE }} | gzip | ssh -i ~/.ssh/deploy_key ${{ env.PROD_USER }}@${{ env.PROD_HOST }} "docker load"
 
-      - name: Sync config files and deploy
+      - name: Write .env to server
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ env.PROD_USER }}@${{ env.PROD_HOST }} "mkdir -p /srv/woo-test"
-          scp -i ~/.ssh/deploy_key \
-            deploy/docker-compose.prod.yml \
-            deploy/nginx/nginx.conf \
-            ${{ env.PROD_USER }}@${{ env.PROD_HOST }}:/srv/woo-test/
+          echo "${{ secrets.PROD_ENV_FILE }}" > /tmp/prod.env
+          scp -i ~/.ssh/deploy_key /tmp/prod.env ${{ env.PROD_USER }}@${{ env.PROD_HOST }}:/srv/woo-test/.env
+          rm -f /tmp/prod.env
+
+      - name: Restart services
+        run: |
           ssh -i ~/.ssh/deploy_key ${{ env.PROD_USER }}@${{ env.PROD_HOST }} << 'DEPLOY'
             cd /srv/woo-test
-            cat > .env << 'EOF'
-            ${{ secrets.PROD_ENV_FILE }}
-            EOF
             docker-compose -f docker-compose.prod.yml up -d --force-recreate --remove-orphans
             docker image prune -f
             echo "Production deployment complete!"
